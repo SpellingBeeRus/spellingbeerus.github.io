@@ -299,14 +299,8 @@ function App() {
       const newWpm = calculateWPM();
       setWpm(newWpm);
 
-      // Проверяем рекорд
-      if (newStreak > bestStreak) {
-        setBestStreak(newStreak);
-        wordService.updateBestStreak(newStreak);
-        showMessage('Новый рекорд! 🏆', 'success');
-      } else {
-        showMessage('Правильно! 🎯', 'success');
-      }
+      // Показываем сообщение об успехе
+      showMessage('Правильно! 🎯', 'success');
       
       // Получаем следующее слово
       const nextWord = wordService.getNextWord();
@@ -323,17 +317,18 @@ function App() {
     } else {
       // Неправильный ответ
       // Сохраняем текущий рекорд, если он лучше предыдущего
-      if (streak > wordService.getBestStreak()) {
-        wordService.updateBestStreak(streak);
+      if (streak > bestStreak) {
+        wordService.updateBestStreak(streak, true);
         setBestStreak(streak);
+        showMessage('Игра окончена. Новый рекорд! 🏆', 'error');
+      } else {
+        showMessage('Неправильно! Попробуйте еще раз 😔', 'error');
       }
       
       // Сбрасываем streak и WPM
       setStreak(0);
       setWpm(0);
       setStartTime(null);
-      
-      showMessage('Неправильно! Попробуйте еще раз 😔', 'error');
       
       // Получаем новое случайное слово
       const newWord = wordService.getRandomWord();

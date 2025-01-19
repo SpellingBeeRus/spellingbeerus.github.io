@@ -8,13 +8,13 @@ type Difficulty = 'easy' | 'normal' | 'hard';
 class WordService {
   private easyWords: Word[] = [
     'кот', 'лес', 'мама', 'река', 'окно', 'гора', 'книга', 'друг', 'хлеб',
-    'месяц', 'письмо', 'мост', 'семья', 'вечер', 'город', 'берег', 'орёл', 'лампа',
-    'звонок', 'стул', 'стол', 'двор'
+    'месяц', 'письмо', 'мост', 'семья', 'город', 'берег', 'орёл', 'лампа',
+    'звонок', 'двор'
   ].map(word => this.createWordObject(word));
 
   private normalWords: Word[] = [
-    'маршрут', 'костюм', 'сосна', 'талант', 'ворон', 'молчание', 'метель', 'загадка',
-    'дружба', 'карусель', 'маршрутка', 'портфель', 'фарфор', 'художник', 'венок',
+    'маршрут', 'костюм', 'талант', 'ворон', 'молчание', 'метель', 'загадка',
+    'дружба', 'маршрутка', 'портфель', 'фарфор', 'художник', 'венок',
     'простыня', 'забота', 'любимый', 'серпантин', 'батон', 'пальто', 'картина',
     'зависть', 'здоровье', 'кузнец'
   ].map(word => this.createWordObject(word));
@@ -97,9 +97,9 @@ class WordService {
     }
   }
 
-  public updateBestStreak(currentStreak: number): void {
+  public updateBestStreak(currentStreak: number, gameEnded: boolean = false): void {
     try {
-      if (currentStreak > this.bestStreak) {
+      if (currentStreak > this.bestStreak && gameEnded) {
         this.bestStreak = currentStreak;
         localStorage.setItem('bestStreak', currentStreak.toString());
       }

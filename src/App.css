@@ -1,0 +1,463 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  font-family: 'Roboto', sans-serif;
+  transition: background-color 0.3s ease !important;
+  background-attachment: fixed;
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
+}
+
+@keyframes gradientBG {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.MuiContainer-root {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+
+.MuiPaper-root {
+  border-radius: 24px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  position: relative;
+  z-index: 1;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.MuiPaper-root::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  padding: 2px;
+  background: linear-gradient(45deg, rgba(33, 150, 243, 0.3), rgba(0, 188, 212, 0.3));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.gradient-text {
+  background: linear-gradient(45deg, #2196f3, #00bcd4);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.gradient-text::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, #2196f3, #00bcd4);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+  transform-origin: right;
+}
+
+.gradient-text:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+.gradient-button {
+  background: linear-gradient(45deg, #2196f3, #00bcd4) !important;
+  border: none !important;
+  color: white !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.5px !important;
+  text-transform: none !important;
+  transition: all 0.3s ease !important;
+}
+
+.gradient-button::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(255, 255, 255, 0.1), transparent);
+  pointer-events: none;
+}
+
+.gradient-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: all 0.5s ease;
+}
+
+.gradient-button:hover::before {
+  left: 100%;
+}
+
+.gradient-button:hover:not(:disabled) {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(33, 150, 243, 0.3) !important;
+}
+
+.pulse-on-hover {
+  position: relative;
+  overflow: hidden;
+}
+
+.pulse-on-hover::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 150%;
+  height: 150%;
+  background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  transition: transform 0.5s ease-out, opacity 0.5s ease-out;
+}
+
+.pulse-on-hover:hover::after {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+.stop-button {
+  border: 2px solid !important;
+  transition: all 0.3s ease !important;
+}
+
+.stop-button:hover:not(:disabled) {
+  background: rgba(244, 67, 54, 0.1) !important;
+  border-color: #f44336 !important;
+  color: #f44336 !important;
+  transform: translateY(-2px) !important;
+}
+
+.theme-toggle-button {
+  transition: all 0.3s ease !important;
+}
+
+.theme-toggle-button:hover {
+  transform: rotate(180deg) !important;
+}
+
+.stat-chip {
+  transition: all 0.3s ease !important;
+  border-width: 2px !important;
+}
+
+.stat-chip:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.MuiButton-contained {
+  text-transform: none !important;
+  font-size: 1rem !important;
+  padding: 12px 24px !important;
+  border-radius: 12px !important;
+  transition: all 0.3s ease !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.3px !important;
+}
+
+.MuiButton-outlined {
+  text-transform: none !important;
+  font-size: 1rem !important;
+  padding: 12px 24px !important;
+  border-radius: 12px !important;
+  transition: all 0.3s ease !important;
+  font-weight: 500 !important;
+  border-width: 2px !important;
+  letter-spacing: 0.3px !important;
+}
+
+.MuiTextField-root {
+  margin-bottom: 1rem;
+}
+
+.MuiTextField-root .MuiOutlinedInput-root {
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.MuiTextField-root .MuiOutlinedInput-root.Mui-focused {
+  background: rgba(33, 150, 243, 0.05);
+}
+
+.MuiTextField-root input {
+  font-size: 1.1rem !important;
+  padding: 16px !important;
+  letter-spacing: 0.3px !important;
+}
+
+.MuiTextField-root .MuiOutlinedInput-root:hover:not(.Mui-error) .MuiOutlinedInput-notchedOutline {
+  border-color: #2196f3;
+}
+
+.MuiToggleButton-root {
+  text-transform: none !important;
+  font-size: 1rem !important;
+  border-radius: 12px !important;
+  transition: all 0.3s ease !important;
+  padding: 12px !important;
+  border-width: 2px !important;
+  letter-spacing: 0.3px !important;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(5px) !important;
+  -webkit-backdrop-filter: blur(5px) !important;
+}
+
+.MuiToggleButton-root::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(33, 150, 243, 0.1), transparent);
+  transition: all 0.5s ease;
+}
+
+.MuiToggleButton-root:hover::before {
+  left: 100%;
+}
+
+.MuiToggleButton-root.Mui-selected {
+  font-weight: 600 !important;
+  background: linear-gradient(45deg, rgba(33, 150, 243, 0.15), rgba(0, 188, 212, 0.15)) !important;
+  border-color: #2196f3 !important;
+}
+
+.MuiLinearProgress-root {
+  border-radius: 8px !important;
+  height: 8px !important;
+  background: rgba(33, 150, 243, 0.1) !important;
+  overflow: hidden !important;
+  position: relative;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.MuiLinearProgress-bar {
+  background: linear-gradient(45deg, #2196f3, #00bcd4) !important;
+  transition: transform 0.1s linear !important;
+  position: relative;
+}
+
+.MuiLinearProgress-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 0.5; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.MuiAlert-root {
+  border-radius: 12px !important;
+  font-weight: 500 !important;
+}
+
+.MuiChip-root {
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  transition: all 0.3s ease !important;
+  border-width: 2px !important;
+}
+
+.MuiChip-root:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.MuiChip-icon {
+  color: inherit !important;
+}
+
+.MuiIconButton-root {
+  border-radius: 12px !important;
+  padding: 12px !important;
+  transition: all 0.3s ease !important;
+}
+
+.MuiIconButton-root:hover {
+  transform: translateY(-2px);
+  background-color: rgba(33, 150, 243, 0.1) !important;
+}
+
+@media (max-width: 600px) {
+  #root {
+    padding: 0.5rem;
+  }
+
+  .MuiContainer-root {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+  
+  .MuiTypography-h4 {
+    font-size: 1.75rem !important;
+  }
+  
+  .MuiButton-contained,
+  .MuiButton-outlined {
+    padding: 10px 20px !important;
+    font-size: 0.9rem !important;
+  }
+  
+  .MuiTextField-root input {
+    font-size: 1rem !important;
+    padding: 14px !important;
+  }
+
+  .MuiToggleButton-root {
+    padding: 8px !important;
+    font-size: 0.9rem !important;
+  }
+
+  .MuiChip-root {
+    font-size: 0.8rem !important;
+    height: 28px !important;
+  }
+
+  .MuiPaper-root {
+    margin: 16px !important;
+    padding: 16px !important;
+  }
+  
+  .stat-chip {
+    flex: 1;
+    min-width: 120px;
+  }
+}
+
+@keyframes glow {
+  0% { box-shadow: 0 0 5px rgba(33, 150, 243, 0.5); }
+  50% { box-shadow: 0 0 20px rgba(33, 150, 243, 0.8); }
+  100% { box-shadow: 0 0 5px rgba(33, 150, 243, 0.5); }
+}
+
+/* Анимация для подсветки правильного ответа */
+@keyframes correctAnswer {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* Анимация для неправильного ответа */
+@keyframes wrongAnswer {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+  100% { transform: translateX(0); }
+}
+
+.MuiAlert-filledSuccess {
+  animation: correctAnswer 0.5s ease-out;
+}
+
+.MuiAlert-filledError {
+  animation: wrongAnswer 0.5s ease-out;
+}
+
+.replay-button {
+  border: 2px solid !important;
+  transition: all 0.3s ease !important;
+}
+
+.replay-button:hover:not(:disabled) {
+  background: rgba(33, 150, 243, 0.1) !important;
+  border-color: #2196f3 !important;
+  color: #2196f3 !important;
+  transform: translateY(-2px) !important;
+}
+
+.replay-button:disabled {
+  opacity: 0.5 !important;
+  border-color: rgba(0, 0, 0, 0.26) !important;
+}

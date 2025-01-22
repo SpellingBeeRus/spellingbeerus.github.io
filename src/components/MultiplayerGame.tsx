@@ -51,7 +51,10 @@ export const MultiplayerGame: React.FC = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    const newSocket = io(SOCKET_URL);
+    const newSocket = io(SOCKET_URL, {
+      withCredentials: true,
+      transports: ['websocket', 'polling']
+    });
     setSocket(newSocket);
 
     const handleRoomCreated = ({ roomId, gameState }: { roomId: string; gameState: GameState }) => {

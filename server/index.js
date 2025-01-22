@@ -21,14 +21,18 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
+    origin: ["https://spellingbeerus.github.io", "http://localhost:3000"],
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
+app.use(cors({
+  origin: ["https://spellingbeerus.github.io", "http://localhost:3000"],
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.static(join(__dirname, '../dist')));
 

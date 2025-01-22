@@ -19,9 +19,16 @@ const io = new Server(httpServer, {
   }
 });
 
+const PORT = process.env.PORT || 3001;
+
 app.use(cors());
 app.use(express.json());
 app.use(express.static(join(__dirname, '../dist')));
+
+// Serve index.html for all routes
+app.get('*', (req, res) => {
+  res.sendFile(join(__dirname, '../dist/index.html'));
+});
 
 // Хранилище игровых комнат
 const gameRooms = new Map();
@@ -214,7 +221,6 @@ function nextWord(roomId) {
   io.to(roomId).emit('new_word', { word: room.gameState.currentWord });
 }
 
-const PORT = process.env.PORT || 3001;
 httpServer.listen(PORT, () => {
-  console.log(`Сервер запущен на порту ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 }); 

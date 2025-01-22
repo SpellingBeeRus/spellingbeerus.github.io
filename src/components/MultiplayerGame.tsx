@@ -112,8 +112,9 @@ export default function MultiplayerGame() {
       setCurrentWord(word);
       if (autoPlay) {
         setTimeout(() => {
-          playAudio();
-        }, 500); // Небольшая задержка перед воспроизведением
+          const audio = new Audio(word.audioPath);
+          audio.play().catch(console.error);
+        }, 500);
       }
     };
 
@@ -274,7 +275,7 @@ export default function MultiplayerGame() {
             </Typography>
             <LinearProgress 
               variant="determinate" 
-              value={(gameState.timer / 15) * 100}
+              value={Math.min((gameState.timer / 15) * 100, 100)}
               sx={{ 
                 height: 8,
                 borderRadius: 4,
@@ -302,7 +303,7 @@ export default function MultiplayerGame() {
                   }
                 }}
               >
-                Прослушать слово
+                Прослушать слово снова
               </Button>
               <TextField
                 fullWidth
@@ -320,6 +321,7 @@ export default function MultiplayerGame() {
                 }}
                 disabled={gameState.players.find(p => p.id === socket.id)?.hasAnswered}
                 autoComplete="off"
+                placeholder="Введите услышанное слово..."
               />
               <Button
                 fullWidth

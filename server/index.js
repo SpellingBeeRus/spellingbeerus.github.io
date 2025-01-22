@@ -293,28 +293,23 @@ io.on('connection', (socket) => {
     const player = room.players.get(socket.id);
     if (!player || !player.isAlive) return;
 
-    // Проверяем, что таймер не истёк
-    if (room.gameState.timer <= 0) {
-      player.isAlive = false;
-      io.to(roomId).emit('game_state_updated', room.getGameState());
-      return;
-    }
-
     const currentWord = room.gameState.playerWords.get(socket.id);
     if (!currentWord) return;
 
-    const normalizedAnswer = wordService.validateInput(answer);
-    const normalizedWord = wordService.validateInput(currentWord.text);
+    if (!player.hasAnswered) {
+      const normalizedAnswer = wordService.validateInput(answer);
+      const normalizedWord = wordService.validateInput(currentWord.text);
 
-    if (normalizedAnswer === normalizedWord) {
-      player.streak++;
-      player.score += 10;
-      player.hasAnswered = true;
-    } else {
-      player.isAlive = false;
+      if (normalizedAnswer === normalizedWord) {
+        player.streak++;
+        player.score += 10;
+        player.hasAnswered = true;
+      } else {
+        player.isAlive = false;
+      }
+
+      io.to(roomId).emit('game_state_updated', room.getGameState());
     }
-
-    io.to(roomId).emit('game_state_updated', room.getGameState());
   });
 
   socket.on('disconnect', () => {

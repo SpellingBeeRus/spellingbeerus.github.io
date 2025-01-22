@@ -30,6 +30,7 @@ interface Player {
   streak: number;
   isAlive: boolean;
   isHost: boolean;
+  hasAnswered: boolean;
 }
 
 interface GameState {
@@ -170,10 +171,10 @@ export default function MultiplayerGame() {
   }, [socket, roomId]);
 
   const handleSubmitAnswer = useCallback(() => {
-    if (!socket || !roomId || !answer.trim() || !gameState?.isActive) return;
+    if (!socket || !roomId || !answer.trim()) return;
     socket.emit('submit_answer', { roomId, answer: answer.trim() });
     setAnswer('');
-  }, [socket, roomId, answer, gameState]);
+  }, [socket, roomId, answer]);
 
   const copyRoomId = () => {
     navigator.clipboard.writeText(roomId);
@@ -223,7 +224,7 @@ export default function MultiplayerGame() {
         <Button
           fullWidth
           variant="contained"
-          onClick={handleJoinRoom}
+          onClick={() => setShowJoinDialog(true)}
           disabled={!playerName.trim() || !roomId.trim()}
         >
           Присоединиться к комнате
@@ -269,7 +270,11 @@ export default function MultiplayerGame() {
             <LinearProgress 
               variant="determinate" 
               value={(gameState.timer / 30) * 100}
-              sx={{ mb: 2, height: 8, borderRadius: 4 }}
+              sx={{ 
+                height: 8,
+                borderRadius: 4,
+                mb: 2
+              }}
             />
           </Box>
           
@@ -289,17 +294,17 @@ export default function MultiplayerGame() {
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSubmitAnswer()}
-                disabled={!gameState.isActive}
                 sx={{ mt: 1 }}
+                disabled={gameState.players.find(p => p.id === socket.id)?.hasAnswered}
               />
               <Button
                 fullWidth
                 variant="contained"
                 onClick={handleSubmitAnswer}
-                disabled={!answer.trim() || !gameState.isActive}
                 sx={{ mt: 1 }}
+                disabled={gameState.players.find(p => p.id === socket.id)?.hasAnswered}
               >
-                Отправить
+                Отправить ответ
               </Button>
             </Box>
           )}
@@ -324,6 +329,7 @@ export default function MultiplayerGame() {
           <Typography>
             {player.name} {player.isHost && '(Хост)'} - Очки: {player.score}, Серия: {player.streak}
             {!player.isAlive && ' (Выбыл)'}
+            {player.hasAnswered && ' ✓'}
           </Typography>
         </Box>
       ))}

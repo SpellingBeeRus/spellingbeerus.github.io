@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
 import {
   Box,
   Button,
@@ -53,48 +54,65 @@ export const MultiplayerGame: React.FC = () => {
 
   useEffect(() => {
     const newSocket = io(SOCKET_URL);
-    setSocket(socket);
+    setSocket(newSocket);
 
-    newSocket.on('room_created', ({ roomId, gameState }) => {
+    const handleRoomCreated = ({ roomId, gameState }: { roomId: string; gameState: GameState }) => {
       setRoomId(roomId);
       setGameState(gameState);
-    });
+    };
 
-    newSocket.on('joined_as_player', ({ gameState }) => {
+    const handleJoinedAsPlayer = ({ gameState }: { gameState: GameState }) => {
       setGameState(gameState);
       setIsSpectator(false);
-    });
+    };
 
-    newSocket.on('joined_as_spectator', ({ gameState }) => {
+    const handleJoinedAsSpectator = ({ gameState }: { gameState: GameState }) => {
       setGameState(gameState);
       setIsSpectator(true);
-    });
+    };
 
-    newSocket.on('game_started', (gameState) => {
+    const handleGameStarted = (gameState: GameState) => {
       setGameState(gameState);
-    });
+    };
 
-    newSocket.on('new_word', ({ word }) => {
+    const handleNewWord = ({ word }: { word: { text: string; audioPath: string } }) => {
       if (audioRef.current) {
         audioRef.current.src = word.audioPath;
         audioRef.current.load();
-        audioRef.current.play();
+        audioRef.current.play().catch(console.error);
       }
-    });
+    };
 
-    newSocket.on('game_state_updated', (gameState) => {
+    const handleGameStateUpdated = (gameState: GameState) => {
       setGameState(gameState);
-    });
+    };
 
-    newSocket.on('game_over', ({ winner }) => {
+    const handleGameOver = ({ winner }: { winner: Player }) => {
       alert(`Игра окончена! Победитель: ${winner.name}`);
-    });
+    };
 
-    newSocket.on('error', ({ message }) => {
+    const handleError = ({ message }: { message: string }) => {
       alert(message);
-    });
+    };
+
+    newSocket.on('room_created', handleRoomCreated);
+    newSocket.on('joined_as_player', handleJoinedAsPlayer);
+    newSocket.on('joined_as_spectator', handleJoinedAsSpectator);
+    newSocket.on('game_started', handleGameStarted);
+    newSocket.on('new_word', handleNewWord);
+    newSocket.on('game_state_updated', handleGameStateUpdated);
+    newSocket.on('game_over', handleGameOver);
+    newSocket.on('error', handleError);
 
     return () => {
+      newSocket.off('room_created', handleRoomCreated);
+      newSocket.off('joined_as_player', handleJoinedAsPlayer);
+      newSocket.off('joined_as_spectator', handleJoinedAsSpectator);
+      newSocket.off('game_started', handleGameStarted);
+      newSocket.off('new_word', handleNewWord);
+      newSocket.off('game_state_updated', handleGameStateUpdated);
+      newSocket.off('game_over', handleGameOver);
+      newSocket.off('error', handleError);
       newSocket.close();
     };
   }, []);

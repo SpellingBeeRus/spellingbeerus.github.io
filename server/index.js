@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
-import { wordService } from '../src/services/wordService.js';
+import { wordService } from './wordService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

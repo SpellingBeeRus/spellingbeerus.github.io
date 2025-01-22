@@ -53,8 +53,21 @@ export const MultiplayerGame: React.FC = () => {
   useEffect(() => {
     const newSocket = io(SOCKET_URL, {
       withCredentials: true,
-      transports: ['websocket', 'polling']
+      transports: ['websocket'],
+      path: '/socket.io/',
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000
     });
+
+    newSocket.on('connect', () => {
+      console.log('Connected to server');
+    });
+
+    newSocket.on('connect_error', (error) => {
+      console.error('Connection error:', error);
+    });
+
     setSocket(newSocket);
 
     const handleRoomCreated = ({ roomId, gameState }: { roomId: string; gameState: GameState }) => {

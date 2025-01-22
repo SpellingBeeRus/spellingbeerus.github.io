@@ -20,12 +20,16 @@ mongoose.connect(MONGODB_URI)
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
+  path: '/socket.io/',
   cors: {
     origin: ["https://spellingbeerus.github.io", "http://localhost:3000"],
     methods: ["GET", "POST"],
     credentials: true,
     allowedHeaders: ["Content-Type"]
-  }
+  },
+  transports: ['websocket'],
+  pingTimeout: 60000,
+  pingInterval: 25000
 });
 
 const PORT = process.env.PORT || 3001;
@@ -38,6 +42,12 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.static(join(__dirname, '../dist')));
+
+// Добавим логирование для отладки
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
 
 // Serve index.html for all routes
 app.get('*', (req, res) => {

@@ -24,13 +24,24 @@ export default function SinglePlayerGame({ onScoreUpdate, onStreakUpdate }: Prop
   const [bestStreak, setBestStreak] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
-  const [totalTime, setTotalTime] = useState(15);
   const [difficulty, setDifficulty] = useState<Difficulty>('normal');
   const [gameStarted, setGameStarted] = useState(false);
   const [timeExpired, setTimeExpired] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<number | null>(null);
   const [gameStartTime, setGameStartTime] = useState<number | null>(null);
+
+  // Время для разных уровней сложности
+  const difficultyTimes = {
+    easy: 5,
+    normal: 8,
+    hard: 12
+  };
+
+  // Получаем текущее время в зависимости от сложности
+  const getCurrentTimeLimit = useCallback(() => {
+    return difficultyTimes[difficulty];
+  }, [difficulty]);
 
   useEffect(() => {
     return () => {
@@ -39,6 +50,17 @@ export default function SinglePlayerGame({ onScoreUpdate, onStreakUpdate }: Prop
       }
     };
   }, []);
+
+  const handleIncorrectAnswer = useCallback(() => {
+    setStreak(0);
+    onStreakUpdate?.(0);
+    setGameStarted(false);
+    setUserInput('');
+    setGameStartTime(null);
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+  }, [onStreakUpdate]);
 
   const startTimer = useCallback(() => {
     if (timerRef.current) {
@@ -49,7 +71,7 @@ export default function SinglePlayerGame({ onScoreUpdate, onStreakUpdate }: Prop
       setGameStartTime(Date.now());
     }
 
-    const duration = totalTime * 1000;
+    const duration = getCurrentTimeLimit() * 1000;
     setTimeExpired(false);
 
     timerRef.current = window.setInterval(() => {
@@ -57,7 +79,7 @@ export default function SinglePlayerGame({ onScoreUpdate, onStreakUpdate }: Prop
       
       const elapsed = Date.now() - gameStartTime;
       const remaining = Math.max(0, duration - elapsed) / 1000;
-      setTimeLeft(Number(remaining.toFixed(1)));
+      setTimeLeft(remaining);
 
       if (remaining <= 0) {
         if (timerRef.current) {
@@ -67,7 +89,7 @@ export default function SinglePlayerGame({ onScoreUpdate, onStreakUpdate }: Prop
         handleIncorrectAnswer();
       }
     }, 100);
-  }, [totalTime, gameStartTime]);
+  }, [gameStartTime, getCurrentTimeLimit, handleIncorrectAnswer]);
 
   const handlePlay = useCallback(async () => {
     if (!audioRef.current || isPlaying) return;
@@ -80,6 +102,7 @@ export default function SinglePlayerGame({ onScoreUpdate, onStreakUpdate }: Prop
         setGameStarted(true);
         const word = await wordService.getRandomWord();
         setCurrentWord(word);
+        setGameStartTime(Date.now());
         startTimer();
       }
     } catch (error) {
@@ -107,8 +130,13 @@ export default function SinglePlayerGame({ onScoreUpdate, onStreakUpdate }: Prop
     if (newDifficulty) {
       setDifficulty(newDifficulty);
       wordService.setDifficulty(newDifficulty);
+      // Если игра уже началась, перезапускаем таймер с новым временем
+      if (gameStarted) {
+        setGameStartTime(Date.now());
+        startTimer();
+      }
     }
-  }, []);
+  }, [gameStarted, startTimer]);
 
   const handleCorrectAnswer = useCallback(async () => {
     const newStreak = streak + 1;
@@ -124,17 +152,6 @@ export default function SinglePlayerGame({ onScoreUpdate, onStreakUpdate }: Prop
     setGameStartTime(Date.now());
     startTimer();
   }, [streak, bestStreak, onStreakUpdate, startTimer]);
-
-  const handleIncorrectAnswer = useCallback(() => {
-    setStreak(0);
-    onStreakUpdate?.(0);
-    setGameStarted(false);
-    setUserInput('');
-    setGameStartTime(null);
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
-  }, [onStreakUpdate]);
 
   const handleSubmit = useCallback(() => {
     if (!currentWord || !gameStarted) return;
@@ -159,13 +176,13 @@ export default function SinglePlayerGame({ onScoreUpdate, onStreakUpdate }: Prop
         sx={{ mb: 3, width: '100%', gap: 1 }}
       >
         <ToggleButton value="easy" sx={{ flex: 1 }}>
-          Легкий
+          Легкий (5 сек)
         </ToggleButton>
         <ToggleButton value="normal" sx={{ flex: 1 }}>
-          Средний
+          Средний (8 сек)
         </ToggleButton>
         <ToggleButton value="hard" sx={{ flex: 1 }}>
-          Сложный
+          Сложный (12 сек)
         </ToggleButton>
       </ToggleButtonGroup>
 
@@ -183,7 +200,7 @@ export default function SinglePlayerGame({ onScoreUpdate, onStreakUpdate }: Prop
           {!timeExpired && (
             <LinearProgress 
               variant="determinate" 
-              value={(timeLeft / totalTime) * 100}
+              value={(timeLeft / getCurrentTimeLimit()) * 100}
               sx={{ 
                 height: 8,
                 borderRadius: 4,

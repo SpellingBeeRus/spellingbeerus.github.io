@@ -63,6 +63,7 @@ export default function MultiplayerGame() {
   const [isSpectator, setIsSpectator] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const theme = useTheme();
+  const [timeLimit, setTimeLimit] = useState(5); // По умолчанию легкий уровень
 
   useEffect(() => {
     const newSocket = io(SOCKET_URL, {
@@ -108,8 +109,9 @@ export default function MultiplayerGame() {
       setGameState(gameState);
     };
 
-    const handleNewWord = ({ word, autoPlay }: { word: Word; autoPlay?: boolean }) => {
+    const handleNewWord = ({ word, autoPlay, timeLimit }: { word: Word; autoPlay?: boolean; timeLimit: number }) => {
       setCurrentWord(word);
+      setTimeLimit(timeLimit);
       if (autoPlay) {
         setTimeout(() => {
           const audio = new Audio(word.audioPath);
@@ -271,11 +273,11 @@ export default function MultiplayerGame() {
         <>
           <Box sx={{ mb: 2 }}>
             <Typography variant="h6" sx={{ mb: 1 }}>
-              Время: {gameState.timer.toFixed(1)} сек
+              Время: {gameState.timer.toFixed(1)} / {timeLimit} сек
             </Typography>
             <LinearProgress 
               variant="determinate" 
-              value={Math.min((gameState.timer / 15) * 100, 100)}
+              value={Math.min((gameState.timer / timeLimit) * 100, 100)}
               sx={{ 
                 height: 8,
                 borderRadius: 4,
@@ -363,6 +365,7 @@ export default function MultiplayerGame() {
             {player.name} {player.isHost && '(Хост)'} - Очки: {player.score}, Серия: {player.streak}
             {!player.isAlive && ' (Выбыл)'}
             {player.hasAnswered && ' ✓'}
+            {player.streak >= 10 ? ' (12 сек)' : player.streak >= 5 ? ' (8 сек)' : ' (5 сек)'}
           </Typography>
         </Box>
       ))}

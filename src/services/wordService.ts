@@ -57,23 +57,20 @@ class WordService {
 
   private createWordObject(word: string): Word {
     const sanitizedWord = this.sanitizeString(word);
-    const audioPath = `/audio/${sanitizedWord}.mp3?v=${Date.now()}`;
+    const audioPath = `/audio/${sanitizedWord}.mp3`;
     
     return {
-      text: sanitizedWord,
+      text: word,
       audioPath
     };
   }
 
   private normalizeText(text: string): string {
-    // Заменяем ё на е
     return text.toLowerCase().replace(/ё/g, 'е');
   }
 
   private sanitizeString(str: string): string {
-    // Сначала нормализуем текст
     const normalized = this.normalizeText(str);
-    // Затем применяем защиту от XSS
     return normalized.replace(/[&<>"']/g, (match) => {
       const escape: { [key: string]: string } = {
         '&': '&amp;',
@@ -121,33 +118,51 @@ class WordService {
     this.currentIndex = -1;
     this.resetUsedWords();
 
-    // Фильтруем слова, для которых есть аудиофайлы
+    const uniqueWords = new Set<Word>();
     const filterAvailableWords = (words: Word[]) => 
       words.filter(word => this.availableAudioFiles.has(word.text));
 
     switch (difficulty) {
       case 'easy':
-        this.currentWords = [
-          ...this.shuffle(filterAvailableWords(this.easyWords)),
-          ...this.shuffle(filterAvailableWords(this.normalWords.slice(0, 5)))
-        ];
+        filterAvailableWords(this.easyWords).forEach(word => uniqueWords.add(word));
+        filterAvailableWords(this.normalWords)
+          .slice(0, 5)
+          .forEach(word => {
+            if (!Array.from(uniqueWords).some(w => w.text === word.text)) {
+              uniqueWords.add(word);
+            }
+          });
         break;
       case 'normal':
-        this.currentWords = [
-          ...this.shuffle(filterAvailableWords(this.normalWords)),
-          ...this.shuffle(filterAvailableWords(this.easyWords.slice(0, 5))),
-          ...this.shuffle(filterAvailableWords(this.hardWords.slice(0, 5)))
-        ];
+        filterAvailableWords(this.normalWords).forEach(word => uniqueWords.add(word));
+        filterAvailableWords(this.easyWords)
+          .slice(0, 5)
+          .forEach(word => {
+            if (!Array.from(uniqueWords).some(w => w.text === word.text)) {
+              uniqueWords.add(word);
+            }
+          });
+        filterAvailableWords(this.hardWords)
+          .slice(0, 5)
+          .forEach(word => {
+            if (!Array.from(uniqueWords).some(w => w.text === word.text)) {
+              uniqueWords.add(word);
+            }
+          });
         break;
       case 'hard':
-        this.currentWords = [
-          ...this.shuffle(filterAvailableWords(this.hardWords)),
-          ...this.shuffle(filterAvailableWords(this.normalWords.slice(0, 5)))
-        ];
+        filterAvailableWords(this.hardWords).forEach(word => uniqueWords.add(word));
+        filterAvailableWords(this.normalWords)
+          .slice(0, 5)
+          .forEach(word => {
+            if (!Array.from(uniqueWords).some(w => w.text === word.text)) {
+              uniqueWords.add(word);
+            }
+          });
         break;
     }
 
-    this.currentWords = this.shuffle(this.currentWords);
+    this.currentWords = this.shuffle(Array.from(uniqueWords));
   }
 
   private shuffle<T>(array: T[]): T[] {
@@ -165,21 +180,22 @@ class WordService {
       this.currentWords = this.shuffle(this.currentWords);
     }
 
-    let attempts = 0;
     let word: Word;
-    do {
-      this.currentIndex = (this.currentIndex + 1) % this.currentWords.length;
-      word = this.currentWords[this.currentIndex];
-      attempts++;
-      if (attempts >= this.currentWords.length) {
-        this.resetUsedWords();
-      }
-    } while (this.usedWords.has(word.text) && attempts < this.currentWords.length);
+    const availableWords = this.currentWords.filter(w => !this.usedWords.has(w.text));
+    
+    if (availableWords.length === 0) {
+      this.resetUsedWords();
+      this.currentIndex = 0;
+      word = this.currentWords[0];
+    } else {
+      this.currentIndex = this.currentWords.indexOf(availableWords[0]);
+      word = availableWords[0];
+    }
 
     this.usedWords.add(word.text);
     return {
-      ...word,
-      audioPath: `${word.audioPath.split('?')[0]}?v=${Date.now()}`
+      text: word.text,
+      audioPath: word.audioPath
     };
   }
 
@@ -196,22 +212,20 @@ class WordService {
       this.currentWords = this.shuffle(this.currentWords);
     }
 
-    let attempts = 0;
     let word: Word;
-    do {
-      const randomIndex = Math.floor(Math.random() * this.currentWords.length);
-      this.currentIndex = randomIndex;
-      word = this.currentWords[randomIndex];
-      attempts++;
-      if (attempts >= this.currentWords.length) {
-        this.resetUsedWords();
-      }
-    } while (this.usedWords.has(word.text) && attempts < this.currentWords.length);
+    const availableWords = this.currentWords.filter(w => !this.usedWords.has(w.text));
+    
+    if (availableWords.length === 0) {
+      this.resetUsedWords();
+      word = this.currentWords[Math.floor(Math.random() * this.currentWords.length)];
+    } else {
+      word = availableWords[Math.floor(Math.random() * availableWords.length)];
+    }
 
     this.usedWords.add(word.text);
     return {
-      ...word,
-      audioPath: `${word.audioPath.split('?')[0]}?v=${Date.now()}`
+      text: word.text,
+      audioPath: word.audioPath
     };
   }
 

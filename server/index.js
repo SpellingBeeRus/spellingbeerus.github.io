@@ -92,6 +92,15 @@ class GameRoom {
     this.roundDuration = 15000; // 15 секунд в миллисекундах
   }
 
+  getDifficultyTime(streak) {
+    if (streak >= 10) {
+      return 12; // Сложный уровень - 12 секунд
+    } else if (streak >= 5) {
+      return 8; // Средний уровень - 8 секунд
+    }
+    return 5; // Легкий уровень - 5 секунд
+  }
+
   addPlayer(playerId, playerName, isHost = false) {
     if (this.players.size >= this.maxPlayers) {
       return false;
@@ -142,9 +151,13 @@ class GameRoom {
       const elapsed = Date.now() - startTime;
       this.gameState.timer = Number((elapsed / 1000).toFixed(1));
       
+      // Получаем максимальное время из всех активных игроков
+      const alivePlayers = Array.from(this.players.values()).filter(p => p.isAlive);
+      const maxTime = Math.max(...alivePlayers.map(p => this.getDifficultyTime(p.streak)));
+      
       io.to(this.id).emit('timer_update', { timer: this.gameState.timer });
       
-      if (this.gameState.timer >= 15.0) {
+      if (this.gameState.timer >= maxTime) {
         clearInterval(this.timerInterval);
         this.handleRoundEnd();
       }
@@ -192,10 +205,11 @@ class GameRoom {
       const word = await wordService.getRandomWord();
       this.gameState.playerWords.set(player.id, word);
       
-      // Отправляем слово игроку
+      // Отправляем слово игроку и время для его уровня сложности
       io.to(player.id).emit('new_word', { 
         word,
-        autoPlay: true
+        autoPlay: true,
+        timeLimit: this.getDifficultyTime(maxStreak)
       });
     }
 

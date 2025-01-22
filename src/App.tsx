@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   Box, 
   TextField, 
@@ -68,6 +68,18 @@ function App() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<number | null>(null);
   const wpmTimerRef = useRef<number | null>(null);
+
+  // Время для разных уровней сложности
+  const difficultyTimes = {
+    easy: 5,
+    normal: 8,
+    hard: 12
+  };
+
+  // Получаем текущее время в зависимости от сложности
+  const getCurrentTimeLimit = useCallback(() => {
+    return difficultyTimes[difficulty];
+  }, [difficulty]);
 
   const theme = createTheme({
     palette: {
@@ -185,9 +197,13 @@ function App() {
   };
 
   const handlePlay = () => {
-    if (audioRef.current && currentWord) {
+    if (audioRef.current) {
       // Сначала останавливаем предыдущее воспроизведение
       handleStop();
+      
+      // Получаем новое слово
+      const newWord = wordService.getRandomWord();
+      setCurrentWord(newWord);
       
       // Ждем немного перед новым воспроизведением
       setTimeout(() => {
@@ -202,12 +218,11 @@ function App() {
           };
           
           audioRef.current.onloadedmetadata = () => {
-            console.log('Аудио метаданные загружены:', currentWord.audioPath);
+            console.log('Аудио метаданные загружены:', newWord.audioPath);
             if (audioRef.current) {
               const duration = audioRef.current.duration;
               console.log('Длительность аудио:', duration);
-              // Устанавливаем фиксированное время для ответа: 15 секунд
-              const answerTime = 15;
+              const answerTime = getCurrentTimeLimit();
               setTotalTime(answerTime);
             }
           };
@@ -222,8 +237,7 @@ function App() {
             setIsPlaying(false);
             setGameStarted(true);
             
-            // Запускаем таймер на 15 секунд после окончания воспроизведения
-            const answerTime = 15;
+            const answerTime = getCurrentTimeLimit();
             setTimeLeft(answerTime);
             
             if (timerRef.current) {
@@ -246,19 +260,13 @@ function App() {
             }, 50); // Уменьшаем интервал для более плавной анимации
           };
 
-          // Воспроизводим аудио
-          audioRef.current.load();
-          const playPromise = audioRef.current.play();
-          if (playPromise !== undefined) {
-            playPromise.catch(error => {
-              if (error.name !== 'AbortError') {
-                console.error('Ошибка воспроизведения:', error);
-                showMessage('Не удалось воспроизвести аудио', 'error');
-                setGameStarted(false);
-                setIsPlaying(false);
-              }
-            });
-          }
+          audioRef.current.src = newWord.audioPath;
+          audioRef.current.play().catch((error) => {
+            console.error('Ошибка воспроизведения:', error);
+            showMessage('Ошибка воспроизведения аудио', 'error');
+            setGameStarted(false);
+            setIsPlaying(false);
+          });
         }
       }, 100);
     }
@@ -282,8 +290,13 @@ function App() {
   };
 
   const handleReplay = () => {
-    if (audioRef.current && !isPlaying) {
-      handlePlay();
+    if (audioRef.current && !isPlaying && currentWord) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch((error) => {
+        console.error('Ошибка воспроизведения:', error);
+        showMessage('Ошибка воспроизведения аудио', 'error');
+        setIsPlaying(false);
+      });
     }
   };
 

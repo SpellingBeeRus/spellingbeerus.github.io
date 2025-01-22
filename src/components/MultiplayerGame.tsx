@@ -38,9 +38,7 @@ interface GameState {
   isActive: boolean;
 }
 
-const SOCKET_URL = process.env.NODE_ENV === 'production' 
-  ? window.location.origin 
-  : 'http://localhost:3001';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
 
 export const MultiplayerGame: React.FC = () => {
   const [socket, setSocket] = useState<Socket | null>(null);

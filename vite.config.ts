@@ -5,7 +5,7 @@ import { resolve } from 'path'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/',
+  base: '/beespelling/',
   server: {
     port: 3000,
     host: true,
@@ -14,7 +14,7 @@ export default defineConfig({
     },
     proxy: {
       '/socket.io': {
-        target: 'http://localhost:3001',
+        target: process.env.VITE_SOCKET_URL || 'http://localhost:3001',
         ws: true
       }
     }
@@ -41,6 +41,9 @@ export default defineConfig({
         }
       }
     }
+  },
+  define: {
+    'process.env.VITE_SOCKET_URL': JSON.stringify(process.env.VITE_SOCKET_URL)
   },
   publicDir: 'public',
   resolve: {

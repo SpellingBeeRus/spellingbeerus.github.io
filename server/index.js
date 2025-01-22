@@ -254,6 +254,27 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('join_room', ({ roomId, playerName }) => {
+    const room = gameRooms.get(roomId);
+    if (!room) {
+      socket.emit('error', { message: 'Комната не найдена' });
+      return;
+    }
+
+    socket.join(roomId);
+
+    if (!room.isRoomFull()) {
+      if (room.addPlayer(socket.id, playerName)) {
+        socket.emit('joined_as_player', { gameState: room.getGameState() });
+        io.to(roomId).emit('game_state_updated', room.getGameState());
+      }
+    } else {
+      room.addSpectator(socket.id);
+      socket.emit('joined_as_spectator', { gameState: room.getGameState() });
+      io.to(roomId).emit('game_state_updated', room.getGameState());
+    }
+  });
+
   socket.on('start_game', ({ roomId }) => {
     const room = gameRooms.get(roomId);
     if (!room || room.hostId !== socket.id || room.players.size < 2) {
@@ -271,6 +292,13 @@ io.on('connection', (socket) => {
 
     const player = room.players.get(socket.id);
     if (!player || !player.isAlive) return;
+
+    // Проверяем, что таймер не истёк
+    if (room.gameState.timer <= 0) {
+      player.isAlive = false;
+      io.to(roomId).emit('game_state_updated', room.getGameState());
+      return;
+    }
 
     const currentWord = room.gameState.playerWords.get(socket.id);
     if (!currentWord) return;

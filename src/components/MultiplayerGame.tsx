@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import {
   Box,
@@ -162,7 +162,6 @@ export default function MultiplayerGame() {
   const handleJoinRoom = useCallback(() => {
     if (!socket || !playerName.trim() || !roomId.trim()) return;
     socket.emit('join_room', { roomId: roomId.trim(), playerName: playerName.trim() });
-    setShowJoinDialog(false);
   }, [socket, playerName, roomId]);
 
   const handleStartGame = useCallback(() => {
@@ -171,10 +170,10 @@ export default function MultiplayerGame() {
   }, [socket, roomId]);
 
   const handleSubmitAnswer = useCallback(() => {
-    if (!socket || !roomId || !answer.trim()) return;
+    if (!socket || !roomId || !answer.trim() || !gameState?.isActive) return;
     socket.emit('submit_answer', { roomId, answer: answer.trim() });
     setAnswer('');
-  }, [socket, roomId, answer]);
+  }, [socket, roomId, answer, gameState]);
 
   const copyRoomId = () => {
     navigator.clipboard.writeText(roomId);
@@ -224,7 +223,7 @@ export default function MultiplayerGame() {
         <Button
           fullWidth
           variant="contained"
-          onClick={() => setShowJoinDialog(true)}
+          onClick={handleJoinRoom}
           disabled={!playerName.trim() || !roomId.trim()}
         >
           Присоединиться к комнате
@@ -245,6 +244,9 @@ export default function MultiplayerGame() {
     <Box sx={{ p: 3, maxWidth: 600, mx: 'auto' }}>
       <Typography variant="h5" sx={{ mb: 2 }}>
         Комната: {roomId}
+        <IconButton onClick={copyRoomId} size="small" sx={{ ml: 1 }}>
+          <ContentCopyIcon />
+        </IconButton>
       </Typography>
       
       {canStartGame && (
@@ -260,13 +262,21 @@ export default function MultiplayerGame() {
 
       {gameState.isActive && (
         <>
-          <Typography variant="h6" sx={{ mb: 1 }}>
-            Время: {gameState.timer} сек
-          </Typography>
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="h6" sx={{ mb: 1 }}>
+              Время: {gameState.timer} сек
+            </Typography>
+            <LinearProgress 
+              variant="determinate" 
+              value={(gameState.timer / 30) * 100}
+              sx={{ mb: 2, height: 8, borderRadius: 4 }}
+            />
+          </Box>
           
           {currentWord && (
             <Box sx={{ mb: 2 }}>
               <Button
+                fullWidth
                 variant="contained"
                 onClick={playAudio}
                 sx={{ mb: 1 }}
@@ -279,8 +289,18 @@ export default function MultiplayerGame() {
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSubmitAnswer()}
+                disabled={!gameState.isActive}
                 sx={{ mt: 1 }}
               />
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={handleSubmitAnswer}
+                disabled={!answer.trim() || !gameState.isActive}
+                sx={{ mt: 1 }}
+              >
+                Отправить
+              </Button>
             </Box>
           )}
         </>

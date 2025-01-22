@@ -108,8 +108,13 @@ export default function MultiplayerGame() {
       setGameState(gameState);
     };
 
-    const handleNewWord = ({ word }: { word: Word }) => {
+    const handleNewWord = ({ word, autoPlay }: { word: Word; autoPlay?: boolean }) => {
       setCurrentWord(word);
+      if (autoPlay) {
+        setTimeout(() => {
+          playAudio();
+        }, 500); // Небольшая задержка перед воспроизведением
+      }
     };
 
     const handleGameStateUpdated = (newGameState: GameState) => {
@@ -265,7 +270,7 @@ export default function MultiplayerGame() {
         <>
           <Box sx={{ mb: 2 }}>
             <Typography variant="h6" sx={{ mb: 1 }}>
-              Время: {gameState.timer} сек
+              Время: {gameState.timer.toFixed(1)} сек
             </Typography>
             <LinearProgress 
               variant="determinate" 
@@ -273,7 +278,12 @@ export default function MultiplayerGame() {
               sx={{ 
                 height: 8,
                 borderRadius: 4,
-                mb: 2
+                mb: 2,
+                background: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                '& .MuiLinearProgress-bar': {
+                  background: 'linear-gradient(90deg, #2196f3, #00bcd4)',
+                  transition: 'transform 0.1s linear'
+                }
               }}
             />
           </Box>
@@ -284,7 +294,13 @@ export default function MultiplayerGame() {
                 fullWidth
                 variant="contained"
                 onClick={playAudio}
-                sx={{ mb: 1 }}
+                sx={{ 
+                  mb: 1,
+                  background: 'linear-gradient(45deg, #2196f3, #00bcd4)',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, #1976d2, #00acc1)'
+                  }
+                }}
               >
                 Прослушать слово
               </Button>
@@ -294,14 +310,29 @@ export default function MultiplayerGame() {
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSubmitAnswer()}
-                sx={{ mt: 1 }}
+                sx={{ 
+                  mt: 1,
+                  '& .MuiOutlinedInput-root': {
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#2196f3'
+                    }
+                  }
+                }}
                 disabled={gameState.players.find(p => p.id === socket.id)?.hasAnswered}
+                autoComplete="off"
               />
               <Button
                 fullWidth
                 variant="contained"
                 onClick={handleSubmitAnswer}
-                sx={{ mt: 1 }}
+                sx={{ 
+                  mt: 1,
+                  background: 'linear-gradient(45deg, #2196f3, #00bcd4)',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, #1976d2, #00acc1)'
+                  },
+                  opacity: gameState.players.find(p => p.id === socket.id)?.hasAnswered ? 0.7 : 1
+                }}
                 disabled={gameState.players.find(p => p.id === socket.id)?.hasAnswered}
               >
                 Отправить ответ

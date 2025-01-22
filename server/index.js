@@ -83,8 +83,8 @@ class GameRoom {
     this.hostId = null;
     this.gameState = {
       isActive: false,
-      timer: 15,
-      playerWords: new Map(), // слова для каждого игрока
+      timer: 15.0,
+      playerWords: new Map(),
       scores: new Map(),
       roundNumber: 0
     };
@@ -134,16 +134,22 @@ class GameRoom {
       clearInterval(this.timerInterval);
     }
     
-    this.gameState.timer = 15;
+    this.gameState.timer = 15.0;
+    const startTime = Date.now();
+    const duration = 15000; // 15 seconds in milliseconds
+
     this.timerInterval = setInterval(() => {
-      this.gameState.timer--;
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, duration - elapsed) / 1000;
+      this.gameState.timer = Number(remaining.toFixed(1));
+      
       io.to(this.id).emit('timer_update', { timer: this.gameState.timer });
       
       if (this.gameState.timer <= 0) {
         clearInterval(this.timerInterval);
         this.handleRoundEnd();
       }
-    }, 1000);
+    }, 100); // Update every 100ms for smooth countdown
   }
 
   handleRoundEnd() {
@@ -187,9 +193,18 @@ class GameRoom {
       const word = await wordService.getRandomWord();
       this.gameState.playerWords.set(player.id, word);
       
-      // Отправляем слово только конкретному игроку
-      io.to(player.id).emit('new_word', { word });
+      // Отправляем слово игроку и начинаем таймер после воспроизведения
+      io.to(player.id).emit('new_word', { 
+        word,
+        autoPlay: true // Флаг для автоматического воспроизведения
+      });
     }
+
+    // Даем 2 секунды на воспроизведение аудио перед стартом таймера
+    setTimeout(() => {
+      this.startTimer();
+      io.to(this.id).emit('start_round');
+    }, 2000);
   }
 
   getGameState() {

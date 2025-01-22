@@ -18,7 +18,8 @@ import {
   IconButton,
   Tooltip,
   Chip,
-  Divider
+  Tabs,
+  Tab
 } from '@mui/material';
 import { wordService, Word, Difficulty } from './services/wordService';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
@@ -41,6 +42,7 @@ import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import './App.css';
+import { MultiplayerGame } from './components/MultiplayerGame';
 
 function App() {
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
@@ -61,6 +63,7 @@ function App() {
   const [timeExpired, setTimeExpired] = useState<boolean>(false);
   const [showHint, setShowHint] = useState<boolean>(false);
   const [gameStarted, setGameStarted] = useState<boolean>(false);
+  const [gameMode, setGameMode] = useState<'single' | 'multi'>('single');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<number | null>(null);
   const wpmTimerRef = useRef<number | null>(null);
@@ -346,6 +349,12 @@ function App() {
     }
   };
 
+  const handleGameModeChange = (_: React.SyntheticEvent, newMode: 'single' | 'multi') => {
+    if (newMode !== null) {
+      setGameMode(newMode);
+    }
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -427,261 +436,277 @@ function App() {
               </Box>
             </Box>
 
-            {showHint && (
-              <Paper
-                sx={{
-                  p: 2,
-                  mb: 3,
-                  background: darkMode ? 'rgba(33, 150, 243, 0.1)' : 'rgba(33, 150, 243, 0.05)',
-                  border: '1px solid',
-                  borderColor: 'primary.main',
-                  borderRadius: 2,
-                }}
-              >
-                <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, color: 'primary.main' }}>
-                  Как играть в BeeSpelling
-                </Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <PlayArrowIcon color="primary" />
-                    <Typography variant="body2">
-                      Нажмите "Прослушать" и внимательно послушайте слово
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <KeyboardIcon color="primary" />
-                    <Typography variant="body2">
-                      Введите услышанное слово в поле ввода и нажмите "Проверить" или Enter
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <StarIcon color="primary" />
-                    <Typography variant="body2">
-                      Получайте очки за правильные ответы и следите за своим рекордом
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <TimerIcon color="primary" />
-                    <Typography variant="body2">
-                      Успейте ввести слово до истечения таймера
-                    </Typography>
-                  </Box>
-                </Box>
-              </Paper>
-            )}
-
-            <ToggleButtonGroup
-              value={difficulty}
-              exclusive
-              onChange={handleDifficultyChange}
-              aria-label="сложность"
-              sx={{ mb: 3, width: '100%', gap: 1 }}
+            <Tabs
+              value={gameMode}
+              onChange={handleGameModeChange}
+              centered
+              sx={{ mb: 3 }}
             >
-              <ToggleButton value="easy" sx={{ flex: 1 }}>
-                Легкий
-              </ToggleButton>
-              <ToggleButton value="normal" sx={{ flex: 1 }}>
-                Средний
-              </ToggleButton>
-              <ToggleButton value="hard" sx={{ flex: 1 }}>
-                Сложный
-              </ToggleButton>
-            </ToggleButtonGroup>
-            
-            <Box sx={{ mb: 3 }}>
-              <Box sx={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                gap: 2, 
-                mb: 2,
-                flexWrap: 'wrap'
-              }}>
-                <Chip
-                  icon={<EmojiEventsIcon />}
-                  label={`Серия: ${streak}`}
-                  color="primary"
-                  variant="outlined"
-                  className="stat-chip"
-                />
-                <Chip
-                  icon={<TrendingUpIcon />}
-                  label={`WPM: ${wpm}`}
-                  color="secondary"
-                  variant="outlined"
-                  className="stat-chip"
-                />
-                <Chip
-                  icon={<EmojiEventsIcon />}
-                  label={`Рекорд: ${bestStreak}`}
-                  color="warning"
-                  variant="outlined"
-                  className="stat-chip"
-                />
-              </Box>
-            </Box>
+              <Tab value="single" label="Одиночная игра" />
+              <Tab value="multi" label="Мультиплеер" />
+            </Tabs>
 
-            {(timeLeft > 0 || timeExpired) && (
-              <Box sx={{ mb: 3 }}>
-                <Box sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  mb: 1,
-                  color: timeExpired ? theme.palette.error.main : theme.palette.text.secondary
-                }}>
-                  {timeExpired ? (
-                    <TimerOffIcon sx={{ mr: 1 }} />
-                  ) : (
-                    <AccessTimeIcon sx={{ mr: 1 }} />
-                  )}
-                  <Typography 
-                    variant="body2" 
-                    color={timeExpired ? "error" : "text.secondary"}
-                    sx={{ fontWeight: timeExpired ? 600 : 400 }}
+            {gameMode === 'single' ? (
+              <>
+                {showHint && (
+                  <Paper
+                    sx={{
+                      p: 2,
+                      mb: 3,
+                      background: darkMode ? 'rgba(33, 150, 243, 0.1)' : 'rgba(33, 150, 243, 0.05)',
+                      border: '1px solid',
+                      borderColor: 'primary.main',
+                      borderRadius: 2,
+                    }}
                   >
-                    {timeExpired ? 'Время вышло!' : `Осталось: ${timeLeft.toFixed(1)} сек`}
-                  </Typography>
+                    <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, color: 'primary.main' }}>
+                      Как играть в BeeSpelling
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <PlayArrowIcon color="primary" />
+                        <Typography variant="body2">
+                          Нажмите "Прослушать" и внимательно послушайте слово
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <KeyboardIcon color="primary" />
+                        <Typography variant="body2">
+                          Введите услышанное слово в поле ввода и нажмите "Проверить" или Enter
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <StarIcon color="primary" />
+                        <Typography variant="body2">
+                          Получайте очки за правильные ответы и следите за своим рекордом
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <TimerIcon color="primary" />
+                        <Typography variant="body2">
+                          Успейте ввести слово до истечения таймера
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Paper>
+                )}
+
+                <ToggleButtonGroup
+                  value={difficulty}
+                  exclusive
+                  onChange={handleDifficultyChange}
+                  aria-label="сложность"
+                  sx={{ mb: 3, width: '100%', gap: 1 }}
+                >
+                  <ToggleButton value="easy" sx={{ flex: 1 }}>
+                    Легкий
+                  </ToggleButton>
+                  <ToggleButton value="normal" sx={{ flex: 1 }}>
+                    Средний
+                  </ToggleButton>
+                  <ToggleButton value="hard" sx={{ flex: 1 }}>
+                    Сложный
+                  </ToggleButton>
+                </ToggleButtonGroup>
+                
+                <Box sx={{ mb: 3 }}>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'center', 
+                    gap: 2, 
+                    mb: 2,
+                    flexWrap: 'wrap'
+                  }}>
+                    <Chip
+                      icon={<EmojiEventsIcon />}
+                      label={`Серия: ${streak}`}
+                      color="primary"
+                      variant="outlined"
+                      className="stat-chip"
+                    />
+                    <Chip
+                      icon={<TrendingUpIcon />}
+                      label={`WPM: ${wpm}`}
+                      color="secondary"
+                      variant="outlined"
+                      className="stat-chip"
+                    />
+                    <Chip
+                      icon={<EmojiEventsIcon />}
+                      label={`Рекорд: ${bestStreak}`}
+                      color="warning"
+                      variant="outlined"
+                      className="stat-chip"
+                    />
+                  </Box>
                 </Box>
-                {!timeExpired && (
-                  <LinearProgress 
-                    variant="determinate" 
-                    value={(timeLeft / totalTime) * 100} 
+
+                {(timeLeft > 0 || timeExpired) && (
+                  <Box sx={{ mb: 3 }}>
+                    <Box sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      mb: 1,
+                      color: timeExpired ? theme.palette.error.main : theme.palette.text.secondary
+                    }}>
+                      {timeExpired ? (
+                        <TimerOffIcon sx={{ mr: 1 }} />
+                      ) : (
+                        <AccessTimeIcon sx={{ mr: 1 }} />
+                      )}
+                      <Typography 
+                        variant="body2" 
+                        color={timeExpired ? "error" : "text.secondary"}
+                        sx={{ fontWeight: timeExpired ? 600 : 400 }}
+                      >
+                        {timeExpired ? 'Время вышло!' : `Осталось: ${timeLeft.toFixed(1)} сек`}
+                      </Typography>
+                    </Box>
+                    {!timeExpired && (
+                      <LinearProgress 
+                        variant="determinate" 
+                        value={(timeLeft / totalTime) * 100} 
+                        sx={{ 
+                          height: 8, 
+                          borderRadius: 4,
+                          background: 'rgba(33, 150, 243, 0.1)',
+                          '& .MuiLinearProgress-bar': {
+                            background: 'linear-gradient(90deg, #2196f3, #00bcd4)',
+                          }
+                        }}
+                      />
+                    )}
+                  </Box>
+                )}
+
+                <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
+                  <Button 
+                    variant="contained" 
+                    onClick={handlePlay}
+                    disabled={isPlaying}
+                    startIcon={<PlayCircleOutlineIcon />}
+                    fullWidth
+                    className="gradient-button pulse-on-hover"
+                    sx={{
+                      position: 'relative',
+                      overflow: 'hidden',
+                      '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%)',
+                        transform: 'translateY(-100%)',
+                        transition: 'transform 0.3s ease',
+                      },
+                      '&:hover::before': {
+                        transform: 'translateY(0)',
+                      }
+                    }}
+                  >
+                    Прослушать
+                  </Button>
+                  {isPlaying ? (
+                    <Button 
+                      variant="outlined" 
+                      onClick={handleStop}
+                      startIcon={<StopIcon />}
+                      fullWidth
+                      className="stop-button"
+                    >
+                      Стоп
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="outlined" 
+                      onClick={handleReplay}
+                      startIcon={<PlayCircleOutlineIcon />}
+                      fullWidth
+                      className="replay-button"
+                      disabled={!gameStarted}
+                    >
+                      Повторить
+                    </Button>
+                  )}
+                </Box>
+
+                <Box sx={{ position: 'relative', mb: 3 }}>
+                  <TextField
+                    fullWidth
+                    value={userInput}
+                    onChange={(e) => setUserInput(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Введите слово..."
+                    variant="outlined"
+                    disabled={!gameStarted && isPlaying}
                     sx={{ 
-                      height: 8, 
-                      borderRadius: 4,
-                      background: 'rgba(33, 150, 243, 0.1)',
-                      '& .MuiLinearProgress-bar': {
-                        background: 'linear-gradient(90deg, #2196f3, #00bcd4)',
+                      mb: 0,
+                      '& .MuiOutlinedInput-root': {
+                        transition: 'all 0.3s ease',
+                        backdropFilter: 'blur(10px)',
+                        background: darkMode ? 
+                          'rgba(255,255,255,0.05)' : 
+                          'rgba(255,255,255,0.9)',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+                        },
+                        '&.Mui-focused': {
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 4px 12px rgba(33, 150, 243, 0.2)',
+                        }
+                      }
+                    }}
+                    autoComplete="off"
+                    inputProps={{
+                      'aria-label': 'введите слово',
+                      maxLength: 50,
+                      style: { 
+                        textAlign: 'center',
+                        fontSize: '1.2rem',
+                        letterSpacing: '1px'
                       }
                     }}
                   />
-                )}
-              </Box>
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      right: 10,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      color: gameStarted ? 'success.main' : 'error.main',
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    {gameStarted ? <LockOpenIcon /> : <LockIcon />}
+                  </Box>
+                </Box>
+
+                <Button 
+                  fullWidth 
+                  variant="contained" 
+                  onClick={handleSubmit}
+                  color="primary"
+                  size="large"
+                  className={`gradient-button ${gameStarted ? 'pulse-on-hover' : ''}`}
+                  sx={{
+                    background: gameStarted ?
+                      'linear-gradient(45deg, #2196f3, #00bcd4)' :
+                      'linear-gradient(45deg, #9e9e9e, #757575)',
+                    transform: gameStarted ? 'scale(1)' : 'scale(0.98)',
+                    opacity: gameStarted ? 1 : 0.8,
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  Проверить
+                </Button>
+              </>
+            ) : (
+              <MultiplayerGame />
             )}
-
-            <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
-              <Button 
-                variant="contained" 
-                onClick={handlePlay}
-                disabled={isPlaying}
-                startIcon={<PlayCircleOutlineIcon />}
-                fullWidth
-                className="gradient-button pulse-on-hover"
-                sx={{
-                  position: 'relative',
-                  overflow: 'hidden',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%)',
-                    transform: 'translateY(-100%)',
-                    transition: 'transform 0.3s ease',
-                  },
-                  '&:hover::before': {
-                    transform: 'translateY(0)',
-                  }
-                }}
-              >
-                Прослушать
-              </Button>
-              {isPlaying ? (
-                <Button 
-                  variant="outlined" 
-                  onClick={handleStop}
-                  startIcon={<StopIcon />}
-                  fullWidth
-                  className="stop-button"
-                >
-                  Стоп
-                </Button>
-              ) : (
-                <Button 
-                  variant="outlined" 
-                  onClick={handleReplay}
-                  startIcon={<PlayCircleOutlineIcon />}
-                  fullWidth
-                  className="replay-button"
-                  disabled={!gameStarted}
-                >
-                  Повторить
-                </Button>
-              )}
-            </Box>
-
-            <Box sx={{ position: 'relative', mb: 3 }}>
-              <TextField
-                fullWidth
-                value={userInput}
-                onChange={(e) => setUserInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Введите слово..."
-                variant="outlined"
-                disabled={!gameStarted && isPlaying}
-                sx={{ 
-                  mb: 0,
-                  '& .MuiOutlinedInput-root': {
-                    transition: 'all 0.3s ease',
-                    backdropFilter: 'blur(10px)',
-                    background: darkMode ? 
-                      'rgba(255,255,255,0.05)' : 
-                      'rgba(255,255,255,0.9)',
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-                    },
-                    '&.Mui-focused': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 12px rgba(33, 150, 243, 0.2)',
-                    }
-                  }
-                }}
-                autoComplete="off"
-                inputProps={{
-                  'aria-label': 'введите слово',
-                  maxLength: 50,
-                  style: { 
-                    textAlign: 'center',
-                    fontSize: '1.2rem',
-                    letterSpacing: '1px'
-                  }
-                }}
-              />
-              <Box
-                sx={{
-                  position: 'absolute',
-                  right: 10,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: gameStarted ? 'success.main' : 'error.main',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                {gameStarted ? <LockOpenIcon /> : <LockIcon />}
-              </Box>
-            </Box>
-
-            <Button 
-              fullWidth 
-              variant="contained" 
-              onClick={handleSubmit}
-              color="primary"
-              size="large"
-              className={`gradient-button ${gameStarted ? 'pulse-on-hover' : ''}`}
-              sx={{
-                background: gameStarted ?
-                  'linear-gradient(45deg, #2196f3, #00bcd4)' :
-                  'linear-gradient(45deg, #9e9e9e, #757575)',
-                transform: gameStarted ? 'scale(1)' : 'scale(0.98)',
-                opacity: gameStarted ? 1 : 0.8,
-                transition: 'all 0.3s ease'
-              }}
-            >
-              Проверить
-            </Button>
           </Paper>
         </Box>
         
@@ -705,7 +730,7 @@ function App() {
           </Alert>
         </Snackbar>
         
-        {currentWord && (
+        {currentWord && gameMode === 'single' && (
           <audio 
             ref={audioRef}
             preload="metadata"

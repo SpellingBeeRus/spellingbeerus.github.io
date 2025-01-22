@@ -23,7 +23,8 @@ const io = new Server(httpServer, {
   cors: {
     origin: ["https://spellingbeerus.github.io", "http://localhost:3000"],
     methods: ["GET", "POST"],
-    credentials: true
+    credentials: true,
+    allowedHeaders: ["Content-Type"]
   }
 });
 
@@ -31,7 +32,9 @@ const PORT = process.env.PORT || 3001;
 
 app.use(cors({
   origin: ["https://spellingbeerus.github.io", "http://localhost:3000"],
-  credentials: true
+  credentials: true,
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type"]
 }));
 app.use(express.json());
 app.use(express.static(join(__dirname, '../dist')));

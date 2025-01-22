@@ -7,9 +7,13 @@ import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
 import mongoose from 'mongoose';
 import { wordService } from './wordService.js';
+import connectDB from './config/database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Подключение к базе данных
+connectDB();
 
 // MongoDB connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/beespelling';

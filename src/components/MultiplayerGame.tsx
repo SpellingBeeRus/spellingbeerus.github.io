@@ -53,19 +53,21 @@ export const MultiplayerGame: React.FC = () => {
   useEffect(() => {
     const newSocket = io(SOCKET_URL, {
       withCredentials: true,
-      transports: ['websocket'],
+      transports: ['websocket', 'polling'],
       path: '/socket.io/',
       reconnection: true,
       reconnectionAttempts: 5,
-      reconnectionDelay: 1000
+      reconnectionDelay: 1000,
+      secure: true,
+      rejectUnauthorized: false
     });
 
     newSocket.on('connect', () => {
-      console.log('Connected to server');
+      console.log('Connected to server:', SOCKET_URL);
     });
 
     newSocket.on('connect_error', (error) => {
-      console.error('Connection error:', error);
+      console.error('Connection error:', error.message);
     });
 
     setSocket(newSocket);

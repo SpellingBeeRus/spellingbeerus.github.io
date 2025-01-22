@@ -27,9 +27,16 @@ const io = new Server(httpServer, {
     credentials: true,
     allowedHeaders: ["Content-Type"]
   },
-  transports: ['websocket'],
+  transports: ['websocket', 'polling'],
   pingTimeout: 60000,
-  pingInterval: 25000
+  pingInterval: 25000,
+  allowEIO3: true,
+  cookie: {
+    name: "socket.io",
+    httpOnly: true,
+    sameSite: "none",
+    secure: true
+  }
 });
 
 const PORT = process.env.PORT || 3001;
@@ -38,8 +45,19 @@ app.use(cors({
   origin: ["https://spellingbeerus.github.io", "http://localhost:3000"],
   credentials: true,
   methods: ["GET", "POST"],
-  allowedHeaders: ["Content-Type"]
+  allowedHeaders: ["Content-Type"],
+  optionsSuccessStatus: 200
 }));
+
+// Добавим заголовки безопасности
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'https://spellingbeerus.github.io');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET,POST');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  next();
+});
+
 app.use(express.json());
 app.use(express.static(join(__dirname, '../dist')));
 

@@ -83,7 +83,7 @@ class GameRoom {
     this.hostId = null;
     this.gameState = {
       isActive: false,
-      timer: 30,
+      timer: 15,
       playerWords: new Map(), // слова для каждого игрока
       scores: new Map(),
       roundNumber: 0
@@ -134,7 +134,7 @@ class GameRoom {
       clearInterval(this.timerInterval);
     }
     
-    this.gameState.timer = 30;
+    this.gameState.timer = 15;
     this.timerInterval = setInterval(() => {
       this.gameState.timer--;
       io.to(this.id).emit('timer_update', { timer: this.gameState.timer });

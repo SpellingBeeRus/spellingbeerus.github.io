@@ -224,7 +224,7 @@ export default function MultiplayerGame() {
         <Button
           fullWidth
           variant="contained"
-          onClick={() => setShowJoinDialog(true)}
+          onClick={handleJoinRoom}
           disabled={!playerName.trim() || !roomId.trim()}
         >
           Присоединиться к комнате
@@ -269,7 +269,7 @@ export default function MultiplayerGame() {
             </Typography>
             <LinearProgress 
               variant="determinate" 
-              value={(gameState.timer / 30) * 100}
+              value={(gameState.timer / 15) * 100}
               sx={{ 
                 height: 8,
                 borderRadius: 4,

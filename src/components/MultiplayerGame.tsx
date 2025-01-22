@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { io } from 'socket.io-client';
-import type { Socket } from 'socket.io-client';
+import React, { useState, useEffect, useCallback } from 'react';
+import { io, Socket } from 'socket.io-client';
 import {
   Box,
   Button,
@@ -16,11 +15,13 @@ import {
   LinearProgress,
   IconButton,
   Tooltip,
+  CircularProgress,
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import PersonIcon from '@mui/icons-material/Person';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import { useTheme } from '@mui/material/styles';
 
 interface Player {
   id: string;
@@ -28,6 +29,7 @@ interface Player {
   score: number;
   streak: number;
   isAlive: boolean;
+  isHost: boolean;
 }
 
 interface GameState {
@@ -36,19 +38,30 @@ interface GameState {
   players: Player[];
   spectators: string[];
   isActive: boolean;
+  timer: number;
+  hostId: string;
+}
+
+interface Word {
+  text: string;
+  audioPath: string;
 }
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
 
-export const MultiplayerGame: React.FC = () => {
+export default function MultiplayerGame() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [playerName, setPlayerName] = useState('');
   const [roomId, setRoomId] = useState('');
   const [gameState, setGameState] = useState<GameState | null>(null);
+  const [currentWord, setCurrentWord] = useState<Word | null>(null);
+  const [answer, setAnswer] = useState('');
+  const [error, setError] = useState('');
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [userInput, setUserInput] = useState('');
   const [isSpectator, setIsSpectator] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const theme = useTheme();
 
   useEffect(() => {
     const newSocket = io(SOCKET_URL, {
@@ -75,40 +88,46 @@ export const MultiplayerGame: React.FC = () => {
     const handleRoomCreated = ({ roomId, gameState }: { roomId: string; gameState: GameState }) => {
       setRoomId(roomId);
       setGameState(gameState);
+      setError('');
     };
 
     const handleJoinedAsPlayer = ({ gameState }: { gameState: GameState }) => {
       setGameState(gameState);
       setIsSpectator(false);
+      setError('');
     };
 
     const handleJoinedAsSpectator = ({ gameState }: { gameState: GameState }) => {
       setGameState(gameState);
       setIsSpectator(true);
+      setError('');
     };
 
     const handleGameStarted = (gameState: GameState) => {
       setGameState(gameState);
     };
 
-    const handleNewWord = ({ word }: { word: { text: string; audioPath: string } }) => {
-      if (audioRef.current) {
-        audioRef.current.src = word.audioPath;
-        audioRef.current.load();
-        audioRef.current.play().catch(console.error);
-      }
+    const handleNewWord = ({ word }: { word: Word }) => {
+      setCurrentWord(word);
     };
 
-    const handleGameStateUpdated = (gameState: GameState) => {
-      setGameState(gameState);
+    const handleGameStateUpdated = (newGameState: GameState) => {
+      setGameState(newGameState);
     };
 
     const handleGameOver = ({ winner }: { winner: Player }) => {
       alert(`Игра окончена! Победитель: ${winner.name}`);
+      setGameState(null);
+      setCurrentWord(null);
+      setRoomId('');
     };
 
     const handleError = ({ message }: { message: string }) => {
-      alert(message);
+      setError(message);
+    };
+
+    const handleTimerUpdate = ({ timer }: { timer: number }) => {
+      setGameState(prev => prev ? { ...prev, timer } : null);
     };
 
     newSocket.on('room_created', handleRoomCreated);
@@ -119,6 +138,7 @@ export const MultiplayerGame: React.FC = () => {
     newSocket.on('game_state_updated', handleGameStateUpdated);
     newSocket.on('game_over', handleGameOver);
     newSocket.on('error', handleError);
+    newSocket.on('timer_update', handleTimerUpdate);
 
     return () => {
       newSocket.off('room_created', handleRoomCreated);
@@ -129,191 +149,172 @@ export const MultiplayerGame: React.FC = () => {
       newSocket.off('game_state_updated', handleGameStateUpdated);
       newSocket.off('game_over', handleGameOver);
       newSocket.off('error', handleError);
+      newSocket.off('timer_update', handleTimerUpdate);
       newSocket.close();
     };
   }, []);
 
-  const createRoom = () => {
-    if (!playerName.trim()) {
-      alert('Введите имя игрока');
-      return;
-    }
-    socket?.emit('create_room', { playerName });
-  };
+  const handleCreateRoom = useCallback(() => {
+    if (!socket || !playerName.trim()) return;
+    socket.emit('create_room', { playerName: playerName.trim() });
+  }, [socket, playerName]);
 
-  const joinRoom = () => {
-    if (!playerName.trim() || !roomId.trim()) {
-      alert('Введите имя игрока и ID комнаты');
-      return;
-    }
-    socket?.emit('join_room', { roomId, playerName });
+  const handleJoinRoom = useCallback(() => {
+    if (!socket || !playerName.trim() || !roomId.trim()) return;
+    socket.emit('join_room', { roomId: roomId.trim(), playerName: playerName.trim() });
     setShowJoinDialog(false);
-  };
+  }, [socket, playerName, roomId]);
 
-  const handleSubmit = () => {
-    if (!userInput.trim() || !roomId || isSpectator) return;
-    socket?.emit('submit_answer', { roomId, answer: userInput });
-    setUserInput('');
-  };
+  const handleStartGame = useCallback(() => {
+    if (!socket || !roomId) return;
+    socket.emit('start_game', { roomId });
+  }, [socket, roomId]);
+
+  const handleSubmitAnswer = useCallback(() => {
+    if (!socket || !roomId || !answer.trim()) return;
+    socket.emit('submit_answer', { roomId, answer: answer.trim() });
+    setAnswer('');
+  }, [socket, roomId, answer]);
 
   const copyRoomId = () => {
     navigator.clipboard.writeText(roomId);
     alert('ID комнаты скопирован в буфер обмена');
   };
 
+  const playAudio = useCallback(async () => {
+    if (!currentWord?.audioPath) return;
+    try {
+      const audio = new Audio(currentWord.audioPath);
+      await audio.play();
+    } catch (error) {
+      console.error('Error playing audio:', error);
+    }
+  }, [currentWord]);
+
+  if (!socket) {
+    return <CircularProgress />;
+  }
+
   if (!gameState) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Paper sx={{ p: 3, maxWidth: 400, mx: 'auto' }}>
-          <Typography variant="h5" sx={{ mb: 3 }}>
-            Мультиплеер
+      <Box sx={{ p: 3, maxWidth: 400, mx: 'auto' }}>
+        <TextField
+          fullWidth
+          label="Ваше имя"
+          value={playerName}
+          onChange={(e) => setPlayerName(e.target.value)}
+          sx={{ mb: 2 }}
+        />
+        <Button
+          fullWidth
+          variant="contained"
+          onClick={handleCreateRoom}
+          disabled={!playerName.trim()}
+          sx={{ mb: 2 }}
+        >
+          Создать комнату
+        </Button>
+        <TextField
+          fullWidth
+          label="ID комнаты"
+          value={roomId}
+          onChange={(e) => setRoomId(e.target.value)}
+          sx={{ mb: 2 }}
+        />
+        <Button
+          fullWidth
+          variant="contained"
+          onClick={() => setShowJoinDialog(true)}
+          disabled={!playerName.trim() || !roomId.trim()}
+        >
+          Присоединиться к комнате
+        </Button>
+        {error && (
+          <Typography color="error" sx={{ mt: 2 }}>
+            {error}
           </Typography>
-          
-          <TextField
-            fullWidth
-            label="Ваше имя"
-            value={playerName}
-            onChange={(e) => setPlayerName(e.target.value)}
-            sx={{ mb: 2 }}
-          />
-
-          <Button
-            fullWidth
-            variant="contained"
-            onClick={createRoom}
-            sx={{ mb: 1 }}
-          >
-            Создать комнату
-          </Button>
-
-          <Button
-            fullWidth
-            variant="outlined"
-            onClick={() => setShowJoinDialog(true)}
-          >
-            Присоединиться к комнате
-          </Button>
-        </Paper>
-
-        <Dialog open={showJoinDialog} onClose={() => setShowJoinDialog(false)}>
-          <DialogTitle>Присоединиться к комнате</DialogTitle>
-          <DialogContent>
-            <TextField
-              fullWidth
-              label="ID комнаты"
-              value={roomId}
-              onChange={(e) => setRoomId(e.target.value)}
-              sx={{ mt: 1 }}
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setShowJoinDialog(false)}>Отмена</Button>
-            <Button onClick={joinRoom} variant="contained">
-              Присоединиться
-            </Button>
-          </DialogActions>
-        </Dialog>
+        )}
       </Box>
     );
   }
 
+  const isHost = socket.id === gameState.hostId;
+  const canStartGame = isHost && gameState.players.length >= 2 && !gameState.isActive;
+
   return (
-    <Box sx={{ p: 3 }}>
-      <Paper sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-          <Typography variant="h5">
-            {isSpectator ? 'Наблюдение за игрой' : 'Игра'}
+    <Box sx={{ p: 3, maxWidth: 600, mx: 'auto' }}>
+      <Typography variant="h5" sx={{ mb: 2 }}>
+        Комната: {roomId}
+      </Typography>
+      
+      {canStartGame && (
+        <Button
+          fullWidth
+          variant="contained"
+          onClick={handleStartGame}
+          sx={{ mb: 2 }}
+        >
+          Начать игру
+        </Button>
+      )}
+
+      {gameState.isActive && (
+        <>
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            Время: {gameState.timer} сек
           </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="body2">ID комнаты: {roomId}</Typography>
-            <Tooltip title="Скопировать ID комнаты">
-              <IconButton size="small" onClick={copyRoomId}>
-                <ContentCopyIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Box>
-
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} md={8}>
+          
+          {currentWord && (
             <Box sx={{ mb: 2 }}>
-              <Typography variant="h6" sx={{ mb: 1 }}>
-                Игроки:
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                {gameState.players.map((player) => (
-                  <Chip
-                    key={player.id}
-                    icon={<PersonIcon />}
-                    label={`${player.name} (${player.score})`}
-                    color={player.isAlive ? 'primary' : 'error'}
-                    variant={player.isAlive ? 'filled' : 'outlined'}
-                  />
-                ))}
-              </Box>
+              <Button
+                variant="contained"
+                onClick={playAudio}
+                sx={{ mb: 1 }}
+              >
+                Прослушать слово
+              </Button>
+              <TextField
+                fullWidth
+                label="Ваш ответ"
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSubmitAnswer()}
+                sx={{ mt: 1 }}
+              />
             </Box>
+          )}
+        </>
+      )}
 
-            {gameState.spectators.length > 0 && (
-              <Box>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  Наблюдатели:
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                  {gameState.spectators.map((spectator) => (
-                    <Chip
-                      key={spectator}
-                      icon={<VisibilityIcon />}
-                      label="Наблюдатель"
-                      variant="outlined"
-                      size="small"
-                    />
-                  ))}
-                </Box>
-              </Box>
-            )}
-          </Grid>
+      <Typography variant="h6" sx={{ mb: 1 }}>
+        Игроки:
+      </Typography>
+      {gameState.players.map((player) => (
+        <Box
+          key={player.id}
+          sx={{
+            p: 1,
+            mb: 1,
+            border: 1,
+            borderColor: theme.palette.divider,
+            borderRadius: 1,
+            backgroundColor: player.isAlive ? 'inherit' : 'rgba(0,0,0,0.1)',
+          }}
+        >
+          <Typography>
+            {player.name} {player.isHost && '(Хост)'} - Очки: {player.score}, Серия: {player.streak}
+            {!player.isAlive && ' (Выбыл)'}
+          </Typography>
+        </Box>
+      ))}
 
-          <Grid item xs={12} md={4}>
-            <Paper sx={{ p: 2, bgcolor: 'background.default' }}>
-              <Typography variant="h6" sx={{ mb: 1 }}>
-                Статистика
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1, flexDirection: 'column' }}>
-                <Typography variant="body2">
-                  Сложность: {gameState.difficulty}
-                </Typography>
-                <Typography variant="body2">
-                  Статус: {gameState.isActive ? 'Идет игра' : 'Ожидание'}
-                </Typography>
-              </Box>
-            </Paper>
-          </Grid>
-        </Grid>
-
-        {!isSpectator && gameState.isActive && (
-          <Box sx={{ mb: 3 }}>
-            <TextField
-              fullWidth
-              value={userInput}
-              onChange={(e) => setUserInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
-              placeholder="Введите слово..."
-              disabled={!gameState.isActive}
-              sx={{ mb: 2 }}
-            />
-            <Button
-              fullWidth
-              variant="contained"
-              onClick={handleSubmit}
-              disabled={!gameState.isActive}
-            >
-              Отправить
-            </Button>
-          </Box>
-        )}
-
-        <audio ref={audioRef} />
-      </Paper>
+      {gameState.spectators.length > 0 && (
+        <>
+          <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
+            Зрители: {gameState.spectators.length}
+          </Typography>
+        </>
+      )}
     </Box>
   );
-}; 
+} 

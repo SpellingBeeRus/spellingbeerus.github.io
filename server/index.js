@@ -75,20 +75,23 @@ const gameRooms = new Map();
 
 // Структура комнаты
 class GameRoom {
-  constructor(id, maxPlayers = 2) {
+  constructor(id, maxPlayers = 4) {
     this.id = id;
     this.players = new Map();
     this.spectators = new Set();
     this.maxPlayers = maxPlayers;
+    this.hostId = null;
     this.gameState = {
-      difficulty: 'easy',
-      currentWord: null,
+      isActive: false,
+      timer: 30,
+      playerWords: new Map(), // слова для каждого игрока
       scores: new Map(),
-      isActive: false
+      roundNumber: 0
     };
+    this.timerInterval = null;
   }
 
-  addPlayer(playerId, playerName) {
+  addPlayer(playerId, playerName, isHost = false) {
     if (this.players.size >= this.maxPlayers) {
       return false;
     }
@@ -97,9 +100,14 @@ class GameRoom {
       name: playerName,
       score: 0,
       streak: 0,
-      isAlive: true
+      isAlive: true,
+      isHost: isHost
     });
+    if (isHost) {
+      this.hostId = playerId;
+    }
     this.gameState.scores.set(playerId, 0);
+    this.gameState.playerWords.set(playerId, null);
     return true;
   }
 
@@ -121,11 +129,75 @@ class GameRoom {
     return this.players.size >= this.maxPlayers;
   }
 
+  startTimer() {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
+    
+    this.gameState.timer = 30;
+    this.timerInterval = setInterval(() => {
+      this.gameState.timer--;
+      io.to(this.id).emit('timer_update', { timer: this.gameState.timer });
+      
+      if (this.gameState.timer <= 0) {
+        clearInterval(this.timerInterval);
+        this.handleRoundEnd();
+      }
+    }, 1000);
+  }
+
+  handleRoundEnd() {
+    const alivePlayers = Array.from(this.players.values()).filter(p => p.isAlive);
+    alivePlayers.forEach(player => {
+      if (!player.hasAnswered) {
+        player.isAlive = false;
+      }
+      player.hasAnswered = false;
+    });
+
+    const remainingPlayers = Array.from(this.players.values()).filter(p => p.isAlive);
+    if (remainingPlayers.length <= 1) {
+      const winner = remainingPlayers[0];
+      io.to(this.id).emit('game_over', { winner });
+      gameRooms.delete(this.id);
+    } else {
+      this.startNextRound();
+    }
+  }
+
+  async startNextRound() {
+    this.gameState.roundNumber++;
+    await this.assignNewWords();
+    this.startTimer();
+    io.to(this.id).emit('game_state_updated', this.getGameState());
+  }
+
+  async assignNewWords() {
+    const alivePlayers = Array.from(this.players.values()).filter(p => p.isAlive);
+    for (const player of alivePlayers) {
+      const maxStreak = player.streak;
+      let difficulty = 'easy';
+      if (maxStreak >= 10) {
+        difficulty = 'hard';
+      } else if (maxStreak >= 5) {
+        difficulty = 'normal';
+      }
+      
+      wordService.setDifficulty(difficulty);
+      const word = await wordService.getRandomWord();
+      this.gameState.playerWords.set(player.id, word);
+      
+      // Отправляем слово только конкретному игроку
+      io.to(player.id).emit('new_word', { word });
+    }
+  }
+
   getGameState() {
     return {
       ...this.gameState,
       players: Array.from(this.players.values()),
-      spectators: Array.from(this.spectators)
+      spectators: Array.from(this.spectators),
+      hostId: this.hostId
     };
   }
 }
@@ -167,7 +239,7 @@ async function nextWord(roomId) {
   }
 }
 
-// Обработка WebSocket соединений
+// Обновляем обработку WebSocket соединений
 io.on('connection', (socket) => {
   console.log('Новое подключение:', socket.id);
 
@@ -175,36 +247,22 @@ io.on('connection', (socket) => {
     const roomId = uuidv4();
     const room = new GameRoom(roomId);
     
-    if (room.addPlayer(socket.id, playerName)) {
+    if (room.addPlayer(socket.id, playerName, true)) {
       gameRooms.set(roomId, room);
       socket.join(roomId);
       socket.emit('room_created', { roomId, gameState: room.getGameState() });
     }
   });
 
-  socket.on('join_room', ({ roomId, playerName }) => {
+  socket.on('start_game', ({ roomId }) => {
     const room = gameRooms.get(roomId);
-    if (!room) {
-      socket.emit('error', { message: 'Комната не найдена' });
+    if (!room || room.hostId !== socket.id || room.players.size < 2) {
+      socket.emit('error', { message: 'Невозможно начать игру' });
       return;
     }
 
-    socket.join(roomId);
-
-    if (!room.isRoomFull()) {
-      if (room.addPlayer(socket.id, playerName)) {
-        socket.emit('joined_as_player', { gameState: room.getGameState() });
-        io.to(roomId).emit('game_state_updated', room.getGameState());
-
-        if (room.isRoomFull()) {
-          startGame(roomId);
-        }
-      }
-    } else {
-      room.addSpectator(socket.id);
-      socket.emit('joined_as_spectator', { gameState: room.getGameState() });
-      io.to(roomId).emit('game_state_updated', room.getGameState());
-    }
+    room.gameState.isActive = true;
+    room.startNextRound();
   });
 
   socket.on('submit_answer', async ({ roomId, answer }) => {
@@ -214,7 +272,7 @@ io.on('connection', (socket) => {
     const player = room.players.get(socket.id);
     if (!player || !player.isAlive) return;
 
-    const currentWord = room.gameState.currentWord;
+    const currentWord = room.gameState.playerWords.get(socket.id);
     if (!currentWord) return;
 
     const normalizedAnswer = wordService.validateInput(answer);
@@ -223,18 +281,9 @@ io.on('connection', (socket) => {
     if (normalizedAnswer === normalizedWord) {
       player.streak++;
       player.score += 10;
-      await nextWord(roomId);
+      player.hasAnswered = true;
     } else {
       player.isAlive = false;
-      const alivePlayers = Array.from(room.players.values()).filter(p => p.isAlive);
-      
-      if (alivePlayers.length <= 1) {
-        const winner = alivePlayers[0];
-        io.to(roomId).emit('game_over', { winner });
-        gameRooms.delete(roomId);
-      } else {
-        await nextWord(roomId);
-      }
     }
 
     io.to(roomId).emit('game_state_updated', room.getGameState());

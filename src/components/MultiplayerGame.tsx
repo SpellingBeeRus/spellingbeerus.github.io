@@ -199,6 +199,17 @@ export default function MultiplayerGame() {
     }
   }, [currentWord]);
 
+  const handleLeaveRoom = useCallback(() => {
+    if (socket) {
+      socket.disconnect();
+      setGameState(null);
+      setCurrentWord(null);
+      setRoomId('');
+      setPlayerName('');
+      setIsSpectator(false);
+    }
+  }, [socket]);
+
   if (!socket) {
     return <CircularProgress />;
   }
@@ -251,12 +262,22 @@ export default function MultiplayerGame() {
 
   return (
     <Box sx={{ p: 3, maxWidth: 600, mx: 'auto' }}>
-      <Typography variant="h5" sx={{ mb: 2 }}>
-        Комната: {roomId}
-        <IconButton onClick={copyRoomId} size="small" sx={{ ml: 1 }}>
-          <ContentCopyIcon />
-        </IconButton>
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h5">
+          Комната: {roomId}
+          <IconButton onClick={copyRoomId} size="small" sx={{ ml: 1 }}>
+            <ContentCopyIcon />
+          </IconButton>
+        </Typography>
+        <Button
+          variant="outlined"
+          color="error"
+          onClick={handleLeaveRoom}
+          sx={{ ml: 2 }}
+        >
+          Выйти
+        </Button>
+      </Box>
       
       {canStartGame && (
         <Button

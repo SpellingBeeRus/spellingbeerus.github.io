@@ -175,7 +175,7 @@ class GameRoom {
 
     const remainingPlayers = Array.from(this.players.values()).filter(p => p.isAlive);
     if (remainingPlayers.length <= 1) {
-      const winner = remainingPlayers[0];
+      const winner = remainingPlayers[0] || { name: "Нет победителя" };
       io.to(this.id).emit('game_over', { winner });
       gameRooms.delete(this.id);
     } else {
